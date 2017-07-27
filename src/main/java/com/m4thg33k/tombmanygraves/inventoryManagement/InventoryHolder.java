@@ -3,11 +3,9 @@ package com.m4thg33k.tombmanygraves.inventoryManagement;
 import com.m4thg33k.tombmanygraves.TombManyGraves;
 import com.m4thg33k.tombmanygraves.blocks.ModBlocks;
 import com.m4thg33k.tombmanygraves.client.gui.GuiDeathItems;
-import com.m4thg33k.tombmanygraves.inventoryManagement.specialCases.CosmeticArmorHandler;
-import com.m4thg33k.tombmanygraves.inventoryManagement.specialCases.CyberwareHandler;
-import com.m4thg33k.tombmanygraves.inventoryManagement.specialCases.InventoryPetsHandler;
-import com.m4thg33k.tombmanygraves.inventoryManagement.specialCases.WearableBackpacksHandler;
+import com.m4thg33k.tombmanygraves.inventoryManagement.specialCases.*;
 import com.m4thg33k.tombmanygraves.items.ItemDeathList;
+import com.m4thg33k.tombmanygraves.lib.ModConfigs;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.player.EntityPlayer;
@@ -17,6 +15,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
@@ -214,7 +213,7 @@ public class InventoryHolder {
 //        {
 //            return false;
 //        }
-        return true;
+        return !hasSoulboundEnchantment(stack);
     }
 
     public NBTTagCompound writeToNBT(NBTTagCompound inCompound)
@@ -498,5 +497,74 @@ public class InventoryHolder {
         }
 
         return ret;
+    }
+
+    public static boolean hasInvalidEnchantment(ItemStack stack)
+    {
+        if (stack == null || stack.isEmpty())
+        {
+            return false;
+        }
+
+        Map<Enchantment, Integer> enchantMap = EnchantmentHelper.getEnchantments(stack);
+        for (Enchantment enchantment : enchantMap.keySet())
+        {
+            ResourceLocation regName = enchantment.getRegistryName();
+            if (regName == null)
+            {
+                continue;
+            }
+            String enchantName = regName.toString();
+            if (ModConfigs.BLACKLISTED_ENCHANTMENTS.containsKey(enchantName) &&
+                    ModConfigs.BLACKLISTED_ENCHANTMENTS.get(enchantName) < enchantMap.get(enchantment))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static boolean hasSoulboundEnchantment(ItemStack stack)
+    {
+        if (stack == null || stack.isEmpty())
+        {
+            return false;
+        }
+
+        if (TombManyGraves.LEVELS && LevelsHandler.hasLevelsSoulbound(stack))
+        {
+            return true;
+        }
+
+        if (hasInvalidEnchantment(stack))
+        {
+            return true;
+        }
+
+        if (stack.hasTagCompound())
+        {
+            NBTTagCompound tagCompound = stack.getTagCompound();
+            if (tagCompound.hasKey("TinkerData")) //adding compat for Tinkers Construct soulbound modifier
+            {
+                tagCompound = tagCompound.getCompoundTag("TinkerData");
+                if (tagCompound.hasKey("Modifiers"))
+                {
+                    NBTTagList modifiers = tagCompound.getTagList("Modifiers", 8);
+                    for (int i=0; i < modifiers.tagCount(); i++)
+                    {
+                        if ("soulbound".equals(modifiers.getStringTagAt(i)))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            else if (tagCompound.hasKey("spectreAnchor")) //adding compat for Random Things' spectre anchor
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -1,9 +1,11 @@
 package com.m4thg33k.tombmanygraves.lib;
 
+import com.m4thg33k.tombmanygraves.util.LogHelper;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 
 import java.awt.*;
+import java.util.HashMap;
 
 public class ModConfigs {
 
@@ -49,6 +51,9 @@ public class ModConfigs {
     // Server related configs
     public static boolean PRINT_DEATH_LOG;
 
+    // Blacklist data
+    public static HashMap<String, Integer> BLACKLISTED_ENCHANTMENTS = new HashMap<>();
+
     public static void preInit(FMLPreInitializationEvent event)
     {
         config = new Configuration(event.getSuggestedConfigurationFile());
@@ -59,6 +64,7 @@ public class ModConfigs {
         handleCommonConfigs();
         handleInteractionConfigs();
         handleGravePlacementConfigs();
+        handleBlacklistConfigs();
 
         config.save();
     }
@@ -234,5 +240,52 @@ public class ModConfigs {
         REPLACE_PLANTS = config.get("GravePlacement", "replacePlants", true, "If true, graves will " +
                 "be able to replace plants (anything that implements IPlantable: grass, crops, etc). " +
                 "(Defaults to true).").getBoolean();
+    }
+
+    private static void handleBlacklistConfigs()
+    {
+        String[] tempStrings;
+
+        tempStrings = config.get("Blacklists",
+                "blacklistedEnchantments",
+                new String[]{"enderio:soulbound#0"},
+                "Any item with an enchanment id in this list will not be gathered by any grave (above the minimim level. " +
+                        "The format is [registry_name_as_resource_location]#[minimum_accepted_level].")
+                .getStringList();
+
+        constructBlacklistedEnchantments(tempStrings);
+    }
+
+    private static void constructBlacklistedEnchantments(String[] theList)
+    {
+        for (String entry : theList)
+        {
+            int hash = entry.indexOf("#");
+            if (hash < 1)
+            {
+                LogHelper.warn("Enchantment blacklist failed for: " + entry);
+                LogHelper.warn("Check the format in the configs!");
+                continue;
+            }
+
+            try
+            {
+                String name = entry.substring(0, hash);
+                int minVal = Integer.parseInt(entry.substring(hash+1, entry.length()));
+                if (BLACKLISTED_ENCHANTMENTS.containsKey(name))
+                {
+                    LogHelper.warn("Enchantment blacklist already contains data for: " + entry);
+                    LogHelper.warn("Skipping this data point.");
+                }
+                else
+                {
+                    BLACKLISTED_ENCHANTMENTS.put(name, minVal);
+                }
+            } catch (Exception e)
+            {
+                LogHelper.warn("Enchantment blacklist failed for: " + entry);
+                LogHelper.warn("Check the format in the configs!");
+            }
+        }
     }
 }
