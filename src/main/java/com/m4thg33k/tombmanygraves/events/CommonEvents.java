@@ -376,28 +376,32 @@ public class CommonEvents {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onPlayerClone(PlayerEvent.Clone event)
     {
-        TileGrave grave = getLastGraveOf(event.getOriginal());
-        if (grave != null)
-        {
-            World world = event.getOriginal().world;
-            BlockPos pos = grave.getPos();
+        if (!event.isCanceled() &&
+                !event.getEntityLiving().world.getGameRules().getBoolean("keepInventory") &&
+                !(event.getEntityLiving().world.isRemote) &&
+                event.isWasDeath()
+        ) {
+            TileGrave grave = getLastGraveOf(event.getOriginal());
+            if (grave != null) {
+                World world = event.getOriginal().world;
+                BlockPos pos = grave.getPos();
 
-            int rad = 4;
+                int rad = 4;
 
-            List<EntityItem> itemsInWorld = world.getEntitiesWithinAABB(EntityItem.class,
-                    new AxisAlignedBB(pos.getX()-rad,
-                            pos.getY()-rad,
-                            pos.getZ()-rad,
-                            pos.getX()+rad,
-                            pos.getY()+rad,
-                            pos.getZ()+rad));
+                List<EntityItem> itemsInWorld = world.getEntitiesWithinAABB(EntityItem.class,
+                        new AxisAlignedBB(pos.getX() - rad,
+                                pos.getY() - rad,
+                                pos.getZ() - rad,
+                                pos.getX() + rad,
+                                pos.getY() + rad,
+                                pos.getZ() + rad));
 
-            for (EntityItem item : itemsInWorld)
-            {
-                item.setDead();
-                ItemStack stack = item.getEntityItem();
+                for (EntityItem item : itemsInWorld) {
+                    item.setDead();
+                    ItemStack stack = item.getEntityItem();
 
-                grave.addDroppedItem(stack);
+                    grave.addDroppedItem(stack);
+                }
             }
         }
 
