@@ -4,6 +4,7 @@ import com.m4thg33k.tombmanygraves.blocks.BlockGrave;
 import com.m4thg33k.tombmanygraves.blocks.ModBlocks;
 import com.m4thg33k.tombmanygraves.friendSystem.FriendHandler;
 import com.m4thg33k.tombmanygraves.inventoryManagement.InventoryHolder;
+import com.m4thg33k.tombmanygraves.inventoryManagement.TransitionInventory;
 import com.m4thg33k.tombmanygraves.items.ModItems;
 import com.m4thg33k.tombmanygraves.lib.ModConfigs;
 import com.m4thg33k.tombmanygraves.util.ChatHelper;
@@ -11,8 +12,10 @@ import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Items;
+import net.minecraft.inventory.InventoryHelper;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.nbt.NBTTagString;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.server.SPacketUpdateTileEntity;
@@ -23,6 +26,8 @@ import net.minecraft.world.World;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @SuppressWarnings("deprecation")
@@ -56,9 +61,11 @@ public class TileGrave extends TileEntity {
 
     private InventoryHolder savedInventory;
 
+    private List<ItemStack> droppedItems;
+
     public TileGrave()
     {
-
+        droppedItems = new ArrayList<>();
     }
 
     private void setPlayerName(@Nonnull String name)
@@ -163,6 +170,19 @@ public class TileGrave extends TileEntity {
 
         timestamp = compound.getString(InventoryHolder.TIMESTAMP);
 
+        if (compound.hasKey("droppedItemList"))
+        {
+            NBTTagList list = compound.getTagList("droppedItemList", 10);
+            droppedItems = new ArrayList<>();
+
+            for (int i=0; i<list.tagCount(); i++)
+            {
+                NBTTagCompound nbt = list.getCompoundTagAt(i);
+                ItemStack stack = new ItemStack(nbt);
+                droppedItems.add(stack.copy());
+            }
+        }
+
         setShouldGroundRender();
     }
 
@@ -189,6 +209,18 @@ public class TileGrave extends TileEntity {
 
         compound = savedInventory.writeToNBT(compound);
         compound.setString(InventoryHolder.TIMESTAMP, timestamp);
+
+        if (droppedItems.size() > 0)
+        {
+            NBTTagList list = new NBTTagList();
+            for (ItemStack stack : droppedItems)
+            {
+                NBTTagCompound nbt = stack.writeToNBT(new NBTTagCompound());
+                list.appendTag(nbt);
+            }
+
+            compound.setTag("droppedItemList", list);
+        }
 
         return compound;
     }
@@ -217,7 +249,36 @@ public class TileGrave extends TileEntity {
         {
             savedInventory.insertInventory(player);
         }
+
+        dropDroppedItemsAt(player.world, player.getPosition());
         world.setBlockToAir(pos);
+    }
+
+    public void addDroppedItem(ItemStack stack)
+    {
+        if (stack == null || stack.isEmpty())
+        {
+            return;
+        }
+
+        droppedItems.add(stack.copy());
+        markDirty();
+    }
+
+    public void dropDroppedItemsAt(World world, BlockPos pos)
+    {
+        if (world.isRemote || droppedItems.size() == 0)
+        {
+            return;
+        }
+
+        TransitionInventory temp = new TransitionInventory(droppedItems.size());
+        for (int i=0; i<droppedItems.size(); i++)
+        {
+            temp.setInventorySlotContents(i, droppedItems.get(i));
+        }
+
+        InventoryHelper.dropInventoryItems(world, pos, temp);
     }
 
     public void dropGraveContentsAt(World worldIn, BlockPos posIn)
@@ -228,6 +289,7 @@ public class TileGrave extends TileEntity {
         }
 
         savedInventory.dropInventory(worldIn, posIn);
+        dropDroppedItemsAt(worldIn, posIn);
         world.setBlockToAir(pos);
     }
 

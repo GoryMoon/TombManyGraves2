@@ -1,6 +1,7 @@
 package com.m4thg33k.tombmanygraves.events;
 
 import com.m4thg33k.tombmanygraves.blocks.ModBlocks;
+import com.m4thg33k.tombmanygraves.capabilities.LastGravePosProvider;
 import com.m4thg33k.tombmanygraves.inventoryManagement.DeathInventoryHandler;
 import com.m4thg33k.tombmanygraves.inventoryManagement.InventoryHolder;
 import com.m4thg33k.tombmanygraves.items.ModItems;
@@ -16,7 +17,9 @@ import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
@@ -27,6 +30,8 @@ import net.minecraftforge.event.entity.player.PlayerDropsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+
+import java.util.List;
 
 public class CommonEvents {
 
@@ -108,6 +113,11 @@ public class CommonEvents {
             {
                 ChatHelper.sayMessage(player, "A suitable location for the grave wasn't found.");
 
+                if (player.hasCapability(LastGravePosProvider.LAST_GRAVE, null))
+                {
+                    player.getCapability(LastGravePosProvider.LAST_GRAVE, null).setGravePos(null);
+                }
+
                 // we need to give them their items back in this case so they can be dropped like normal
                 inventoryHolder.insertInventory(player);
             }
@@ -135,6 +145,11 @@ public class CommonEvents {
                     inventoryHolder.setPosition(posToPlace);
                     grave.setSavedInventory(inventoryHolder);
 
+
+                    if (player.hasCapability(LastGravePosProvider.LAST_GRAVE, null))
+                    {
+                        player.getCapability(LastGravePosProvider.LAST_GRAVE, null).setGravePos(posToPlace);
+                    }
                 }
                 else
                 {
@@ -147,6 +162,11 @@ public class CommonEvents {
         {
             // if graves aren't allowed, we need to give the player their items back
             inventoryHolder.insertInventory(player);
+
+            if (player.hasCapability(LastGravePosProvider.LAST_GRAVE, null))
+            {
+                player.getCapability(LastGravePosProvider.LAST_GRAVE, null).setGravePos(null);
+            }
         }
 
         if (ModConfigs.ALLOW_INVENTORY_SAVES)
@@ -274,22 +294,114 @@ public class CommonEvents {
         }
     }
 
-    @SubscribeEvent(priority = EventPriority.HIGH)
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public void itemDrop(PlayerDropsEvent event)
     {
-        for (EntityItem entityItem : event.getDrops())
+        boolean hasGrave = event.getEntityPlayer().hasCapability(LastGravePosProvider.LAST_GRAVE, null);
+        TileGrave grave = null;
+        if (hasGrave)
         {
-            if (entityItem.getEntityItem().getItem() == Item.getItemFromBlock(ModBlocks.blockGrave) ||
-                    entityItem.getEntityItem().getItem() == ModItems.itemDeathList)
+            BlockPos gravePos = event.getEntityPlayer().getCapability(LastGravePosProvider.LAST_GRAVE, null).getGravePos();
+
+            if (gravePos == null)
             {
-                entityItem.setDead();
+                hasGrave = false;
+            }
+            else {
+                TileEntity tile = event.getEntityPlayer().world.getTileEntity(gravePos);
+                if (tile == null || ! (tile instanceof TileGrave)) {
+                    hasGrave = false;
+                }
+                else
+                {
+                    grave = (TileGrave) tile;
+                }
             }
         }
+
+        ItemStack stack;
+        for (int i=0; i<event.getDrops().size(); i++)
+        {
+            stack = event.getDrops().get(i).getEntityItem();
+
+            event.getDrops().remove(i);
+            if (hasGrave && stack.getItem() != Item.getItemFromBlock(ModBlocks.blockGrave)
+                    && stack.getItem() != ModItems.itemDeathList)
+            {
+                grave.addDroppedItem(stack);
+            }
+        }
+
+//        for (EntityItem entityItem : event.getDrops())
+//        {
+//            if (entityItem.getEntityItem().getItem() == Item.getItemFromBlock(ModBlocks.blockGrave) ||
+//                    entityItem.getEntityItem().getItem() == ModItems.itemDeathList)
+//            {
+//                entityItem.setDead();
+//            }
+//            else
+//            {
+//                if (!hasGrave)
+//                {
+//                    continue;
+//                }
+//
+//                grave.addDroppedItem(entityItem.getEntityItem());
+//            }
+//        }
+    }
+
+    private static TileGrave getLastGraveOf(EntityPlayer player)
+    {
+        if (!player.hasCapability(LastGravePosProvider.LAST_GRAVE, null))
+        {
+            return null;
+        }
+
+        BlockPos pos = player.getCapability(LastGravePosProvider.LAST_GRAVE, null).getGravePos();
+        if (pos == null)
+        {
+            return null;
+        }
+
+        TileEntity tile = player.world.getTileEntity(pos);
+        if (tile == null || !(tile instanceof TileGrave))
+        {
+            return null;
+        }
+
+        return (TileGrave) tile;
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onPlayerClone(PlayerEvent.Clone event)
     {
+        TileGrave grave = getLastGraveOf(event.getOriginal());
+        if (grave != null)
+        {
+            World world = event.getOriginal().world;
+            BlockPos pos = grave.getPos();
+
+            int rad = 4;
+
+            List<EntityItem> itemsInWorld = world.getEntitiesWithinAABB(EntityItem.class,
+                    new AxisAlignedBB(pos.getX()-rad,
+                            pos.getY()-rad,
+                            pos.getZ()-rad,
+                            pos.getX()+rad,
+                            pos.getY()+rad,
+                            pos.getZ()+rad));
+
+            for (EntityItem item : itemsInWorld)
+            {
+                item.setDead();
+                ItemStack stack = item.getEntityItem();
+
+                grave.addDroppedItem(stack);
+            }
+        }
+
+        // handle spawning of Death List
         if (ModConfigs.ALLOW_INVENTORY_LISTS &&
                 !event.isCanceled() &&
                 !event.getEntityLiving().world.getGameRules().getBoolean("keepInventory") &&
@@ -297,8 +409,6 @@ public class CommonEvents {
                 !(event.getEntityLiving().world.isRemote) &&
                 event.isWasDeath())
         {
-            LogHelper.info(event.getEntityPlayer().getBedLocation());
-            LogHelper.info(event.getOriginal().getBedLocation());
             DeathInventoryHandler.getDeathList(event.getOriginal(), event.getOriginal().getName(), "latest", true);
         }
     }

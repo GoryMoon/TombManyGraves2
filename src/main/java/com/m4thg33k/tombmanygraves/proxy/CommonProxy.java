@@ -3,6 +3,10 @@ package com.m4thg33k.tombmanygraves.proxy;
 import com.m4thg33k.tombmanygraves.TombManyGraves;
 import com.m4thg33k.tombmanygraves.blocks.ModBlocks;
 import com.m4thg33k.tombmanygraves.blocks.itemblocks.ModItemBlocks;
+import com.m4thg33k.tombmanygraves.capabilities.CapabilityHandler;
+import com.m4thg33k.tombmanygraves.capabilities.ILastGravePos;
+import com.m4thg33k.tombmanygraves.capabilities.LastGravePosStorage;
+import com.m4thg33k.tombmanygraves.capabilities.PlayerLastGravePos;
 import com.m4thg33k.tombmanygraves.events.CommonEvents;
 import com.m4thg33k.tombmanygraves.friendSystem.FriendHandler;
 import com.m4thg33k.tombmanygraves.gui.ModGuiHandler;
@@ -14,6 +18,7 @@ import com.m4thg33k.tombmanygraves.tiles.ModTiles;
 import com.m4thg33k.tombmanygraves.util.LogHelper;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
@@ -39,6 +44,9 @@ public class CommonProxy {
         NetworkRegistry.INSTANCE.registerGuiHandler(TombManyGraves.INSTANCE, new ModGuiHandler());
         MinecraftForge.EVENT_BUS.register(new CommonEvents());
         MinecraftForge.EVENT_BUS.register(new FriendHandler());
+        MinecraftForge.EVENT_BUS.register(new CapabilityHandler());
+
+        CapabilityManager.INSTANCE.register(ILastGravePos.class, new LastGravePosStorage(), PlayerLastGravePos.class);
 
         ModTiles.init();
     }

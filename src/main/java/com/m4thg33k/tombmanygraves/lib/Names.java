@@ -12,4 +12,6 @@ public class Names {
     public static final String BLOCK_PATH = MODID + ":blocks/";
     public static final String BLOCK_MODEL_PATH = MODID + ":models/block/";
 
+    public static final String LAST_GRAVE_CAP = "last_grave";
+
 }
