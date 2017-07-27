@@ -174,6 +174,10 @@ public class DeathInventoryHandler {
                     {
                         pos = bedPos;
                     }
+                    else
+                    {
+                        pos = player.world.getSpawnPoint();
+                    }
                 }
                 EntityItem entityItem = new EntityItem(player.world, pos.getX(), pos.getY(), pos.getZ(), theList);
                 player.world.spawnEntity(entityItem);
