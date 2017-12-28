@@ -164,37 +164,7 @@ public class DeathInventoryHandler {
                 ItemStack theList = new ItemStack(ModItems.itemDeathList, 1);
                 theList.setTagCompound(allNBT);
 
-                BlockPos pos = playerOld.getPosition();
-                EntityPlayer thePlayer = playerOld;
-                if (didDie)
-                {
-                    thePlayer = playerNew;
-                    LogHelper.info("Player respawn dimension: " + playerOld.getSpawnDimension());
-                    LogHelper.info("Player respawn dimension: " + playerOld.world.provider.getRespawnDimension((EntityPlayerMP)playerOld));
-                    LogHelper.info(playerOld.hasSpawnDimension());
-//                    BlockPos bedPos = player.getBedLocation(player.getSpawnDimension());
-                    BlockPos bedPos = playerOld.getBedLocation(playerOld.world.provider.getDimension());
-                    if (bedPos != null)
-                    {
-                        LogHelper.info("A " + bedPos.toString());
-                        pos = bedPos;
-                    }
-                    else
-                    {
-                        bedPos = playerOld.getBedLocation(playerOld.getSpawnDimension());
-                        if (bedPos != null){
-                            LogHelper.info("B " + bedPos.toString());
-                            pos = bedPos;
-                        } else {
-                            pos = playerOld.world.getSpawnPoint();
-                        }
-                    }
-                }
-                EntityItem entityItem = new EntityItem(thePlayer.world, pos.getX(), pos.getY(), pos.getZ(), theList);
-                thePlayer.world.spawnEntity(entityItem);
-//                EntityItem entityItem = new EntityItem(playerOld.world, pos.getX(), pos.getY(), pos.getZ(), theList);
-//                playerOld.world.spawnEntity(entityItem);
-                LogHelper.info("Spawning Death List in world: " + thePlayer.world.provider.getDimension() + " at location: " + pos.toString());
+                playerNew.addItemStackToInventory(theList);
             }
             else
             {

@@ -8,6 +8,7 @@ import com.m4thg33k.tombmanygraves.inventoryManagement.InventoryHolder;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.DimensionType;
 
 public class GuiDeathItems extends ModBaseGui{
 
@@ -120,6 +121,8 @@ public class GuiDeathItems extends ModBaseGui{
         {
             header.add("Grave at: (x,y,z)=(" + pos.getX() + "," + pos.getY() + "," + pos.getZ() + ")");
         }
+        DimensionType type = DimensionType.getById(inventoryHolder.getDimension());
+        header.add("Dimension: " + type.getName() + "(" + inventoryHolder.getDimension() + ")");
         header.add("Timestamp: " + inventoryHolder.getTimestamp());
     }
 

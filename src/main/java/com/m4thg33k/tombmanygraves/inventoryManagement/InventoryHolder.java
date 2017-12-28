@@ -35,6 +35,7 @@ public class InventoryHolder {
     public static final String EMPTY = "IsEmpty";
     public static final String TIMESTAMP = "Timestamp";
     public static final String PLAYER_NAME = "PlayerName";
+    public static final String PLAYER_DIMENSION = "PlayerDimension";
     public static final String BAUBLE_INVENTORY = "BaubleInventory";
     public static final String X = "Xcoord";
     public static final String Y = "Ycoord";
@@ -52,6 +53,7 @@ public class InventoryHolder {
     private int ycoord = -1;
     private int zcoord = -1;
     private String playerName = "unknown";
+    private int dimension;
 
     public InventoryHolder()
     {
@@ -143,6 +145,7 @@ public class InventoryHolder {
 
         playerName = player.getName();
         compound.setString(PLAYER_NAME, playerName);
+        compound.setInteger(PLAYER_DIMENSION, player.dimension);
 
         setTimestamp(new SimpleDateFormat("MM_dd_YYYY_HH_mm_ss").format(new Date()));
     }
@@ -184,6 +187,11 @@ public class InventoryHolder {
     public String getTimestamp()
     {
         return timestamp;
+    }
+
+    public int getDimension()
+    {
+        return dimension;
     }
 
     private NBTTagList getTagFromInventory(IInventory inventory)
@@ -239,6 +247,7 @@ public class InventoryHolder {
 
             this.timestamp = compound.getString(TIMESTAMP);
             this.playerName = compound.getString(PLAYER_NAME);
+            this.dimension = compound.getInteger(PLAYER_DIMENSION);
         }
         else
         {
@@ -251,6 +260,7 @@ public class InventoryHolder {
 
             this.timestamp = "";
             this.playerName = "unknown";
+            this.dimension = 0;
         }
     }
 

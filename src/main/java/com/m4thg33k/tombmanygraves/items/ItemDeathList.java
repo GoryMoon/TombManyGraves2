@@ -109,6 +109,23 @@ public class ItemDeathList extends Item {
         }
     }
 
+    private int getDimension(ItemStack stack) {
+        if (stack.isEmpty() || !stack.hasTagCompound())
+        {
+            return 0;
+        }
+        else {
+            NBTTagCompound compound = stack.getTagCompound();
+
+            if (compound.hasKey(InventoryHolder.TAG_NAME)) {
+                compound = compound.getCompoundTag(InventoryHolder.TAG_NAME);
+                return compound.getInteger(InventoryHolder.PLAYER_DIMENSION);
+            }
+
+            return 0;
+        }
+    }
+
     private Vector3f getDirectionalVector(ItemStack stack, Vector3f start)
     {
         Vector3f end = getEndVector(stack);
@@ -127,6 +144,9 @@ public class ItemDeathList extends Item {
         {
             return;
         }
+
+        if (worldIn.provider.getDimension() != getDimension(stack))
+            return;
 
         if (ModConfigs.REQUIRE_SNEAK_FOR_PATH && !entityIn.isSneaking())
         {
