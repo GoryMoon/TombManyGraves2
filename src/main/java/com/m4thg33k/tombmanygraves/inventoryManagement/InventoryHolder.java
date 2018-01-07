@@ -17,6 +17,7 @@ import com.m4thg33k.tombmanygraves.inventoryManagement.specialCases.InventoryPet
 import com.m4thg33k.tombmanygraves.inventoryManagement.specialCases.WearableBackpacksHandler;
 import com.m4thg33k.tombmanygraves.items.ItemDeathList;
 
+import com.m4thg33k.tombmanygraves.lib.ModConfigs;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.player.EntityPlayer;
@@ -206,7 +207,7 @@ public class InventoryHolder {
     public static boolean isItemValidForGrave(ItemStack stack)
     {
         if (stack.isEmpty()
-                || stack.getItem() instanceof ItemDeathList
+                || (!ModConfigs.ALLOW_DEATH_LIST && stack.getItem() instanceof ItemDeathList)
                 || stack.getItem() == Item.getItemFromBlock(ModBlocks.blockGrave))
         {
             return false;

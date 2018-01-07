@@ -24,6 +24,7 @@ public class ModConfigs {
 
     // Common configs
     public static boolean ENABLE_GRAVES;
+    public static boolean ALLOW_DEATH_LIST;
     public static boolean DROP_ITEMS_ON_GROUND;
     public static boolean GIVE_ITEMS_IN_GRAVE_PRIORITY;
     public static boolean DEFAULT_TO_LOCKED;
@@ -145,7 +146,10 @@ public class ModConfigs {
                 "spawned upon players deaths. This does not get rid of any graves currently in-world." +
                 " (Defaults to true...obviously.)").getBoolean();
 
-        DROP_ITEMS_ON_GROUND = config.get("graveConfigs", "dropItemsOnGround", false, "If set to true, instead of" +
+        ALLOW_DEATH_LIST = config.get("graveconfigs", "allowDeathListInGrave", true, "If true death lists from " +
+                "previous deaths are allowed in a new grave. (Defaults to true.)").getBoolean();
+
+        DROP_ITEMS_ON_GROUND = config.get("graveConfigs", "dropItemsOnGround", false, "If set to true, instead of " +
                 "attempting to place all items back in the player's original slots, the items will instead be placed " +
                 "on the ground like every other grave mod. (Defaults to false.)").getBoolean();
 
